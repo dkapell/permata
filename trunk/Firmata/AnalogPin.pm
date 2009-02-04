@@ -84,7 +84,7 @@ sub set_value{
     $self->{'Value'} = $value;
 }
 
-sub read_value{
+sub read{
     my $self = shift;
     return $self->{'Value'};
 }
