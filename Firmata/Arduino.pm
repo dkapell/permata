@@ -116,7 +116,7 @@ sub iterate {
 }
 
 sub _process_input{
-    my $self->shift;
+    my $self = shift;
     my ($data) = @_;
     if ($data < 0xF0){
         #Multibyte
@@ -126,12 +126,12 @@ sub _process_input{
             #Digital in
             my $lsb = "";
             my $msb = "";
-            while ($lsb == ""){
+            while ($lsb eq ""){
                 my $bytes = undef;
                 ($bytes, $lsb) = $self->{'Device'}->read(1);
                 carp ("Read failed") unless (1 == $bytes);
             }
-            while ($msb == ""){
+            while ($msb eq ""){
                 my $bytes = undef;
                 ($bytes, $msb) = $self->{'Device'}->read(1);
                 carp ("Read failed") unless (1 == $bytes);
@@ -144,12 +144,12 @@ sub _process_input{
             my $pin_number = $data & 0x0f;
             my $lsb = "";
             my $msb = "";
-            while ($lsb == ""){
+            while ($lsb eq ""){
                 my $bytes = undef;
                 ($bytes, $lsb) = $self->{'Device'}->read(1);
                 carp ("Read failed") unless (1 == $bytes);
             }
-            while ($msb == ""){
+            while ($msb eq ""){
                 my $bytes = undef;
                 ($bytes, $msb) = $self->{'Device'}->read(1);
                 carp ("Read failed") unless (1 == $bytes);
