@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use lib '/d/eclipse/workspace/permata';
+#use lib '/d/eclipse/workspace/permata'; #used for testing
 
 use Firmata::Arduino;
 
