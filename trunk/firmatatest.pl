@@ -27,21 +27,19 @@ EOF
 }
 
 my $arduino = Firmata::Arduino->new($device) or die "Failed to create device on port $device";
+#print $arduino->get_firmata_version() . "\n";
 
 if ($mode == 1){
-    $arduino->{'DigitalPorts'}[ $pin>>3 ]->set_active(1);
-    $arduino->{'Digital'}[$pin]->set_mode(Firmata::Arduino::DIGITAL_INPUT);
+    $arduino->set_digital_pin_mode($pin, "DIGITAL_INPUT")or die "Could not activate digital pin $pin, exiting";
     
 } elsif ($mode == 2){
-    $arduino->{'DigitalPorts'}[ $pin>>3 ]->set_active(1);
-    $arduino->{'Digital'}[$pin]->set_mode(Firmata::Arduino::DIGITAL_OUTPUT);
+    $arduino->set_digital_pin_mode($pin, "DIGITAL_OUTPUT") or die "Could not activate digital pin $pin, exiting";
     
 }elsif ($mode == 3){
-    $arduino->{'DigitalPorts'}[ $pin>>3 ]->set_active(1);
-    $arduino->{'Digital'}[$pin]->set_mode(Firmata::Arduino::DIGITAL_PWM);
+    $arduino->set_digital_pin_mode($pin, "DIGITAL_PWM") or die "Could not activate digital pin $pin, exiting";
     
 }elsif ($mode == 4) {
-    $arduino->{'Analog'}[$pin]->set_active(1);
+    $arduino->activate_analog_pin($pin) or die "Could not activate analog pin $pin, exiting";
 } else {
     print "Invalid mode $mode\n\n";
     usage();
@@ -53,7 +51,8 @@ while (1){
     $arduino->iterate();
     if ($mode == 1){
         # Digital Input
-        my $value = $arduino->{'Digital'}[$pin]->read();
+        my $value = $arduino->read_digital_pin($pin);
+        
         unless ($value == $last_value){
             $last_value = $value;
             if ($value == 1){
@@ -65,15 +64,17 @@ while (1){
     } elsif ($mode == 2){
         #Digital Output
         #Alter the value every second
-        $arduino->{'Digital'}[$pin]->write(time % 2);
+        $arduino->write_digital_pin($pin, (time % 2));
     } elsif ($mode == 3){
         #Digital PWM
         #Alter the value every second
         my $value = (int(time() %32))/32;
-        $arduino->{'Digital'}[$pin]->write($value);
+        $arduino->write_digital_pin($pin, $value);
+        
     } elsif ($mode == 4){
         #Analog Input
-        my $value = $arduino->{'Analog'}[$pin]->read();
+        my $value = $arduino->read_analog_pin($pin);
+        
         unless ($value == $last_value){
             $last_value = $value;
             print "Analog pin value is $value\n";

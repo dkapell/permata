@@ -1,45 +1,11 @@
 package Firmata::AnalogPin;
-require Exporter;
 
 use strict;
 use warnings;
 use Carp;
 
-#use Device::SerialPort;
-
-our @ISA         = qw(Exporter);
-our %EXPORT_TAGS = (
-    'all' => [ qw(
-    )]);
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-);
-
+use Firmata::Constants;
 our $VERSION = '1';
-
-# Constants
-# Message Command Bytes
-use constant DIGITAL_MESSAGE        => 0x90; # send data for a digital pin
-use constant ANALOG_MESSAGE         => 0xE0;  # send data for a analog pin
-
-use constant REPORT_ANALOG_PIN      => 0xC0; # enable analog input by pin #
-use constant REPORT_DIGITAL_PORTS   => 0xD0; # enable digital input by port pair
-use constant START_SYSEX            => 0xF0; # start a MIDI SysEx message
-use constant SET_DIGITAL_PIN_MODE   => 0xF4; # set a digital pin to INPUT or OUTPUT
-use constant END_SYSEX              => 0xF7; # end a MIDI SysEx message
-use constant REPORT_VERSION         => 0xF9; # report firmware version
-use constant SYSTEM_RESET           => 0xFF; # reset from MIDI
-
-# Pin modes
-use constant UNAVAILABLE            => -1;
-use constant DIGITAL_INPUT          => 0;
-use constant DIGITAL_OUTPUT         => 1;
-use constant DIGITAL_PWM            => 2;
-
-use constant PWM_PINS => (9,10,11);
-
 
 sub new {
     my $that = shift;
@@ -86,6 +52,7 @@ sub set_value{
 
 sub read{
     my $self = shift;
+    print "Reading Analog pin " . $self->{'PinNumber'} . "\n" if DEBUG; 
     return $self->{'Value'};
 }
 

@@ -1,10 +1,10 @@
 package Firmata::Arduino;
-require Exporter;
 
 use strict;
 use warnings;
 use Carp;
 
+use Firmata::Constants;
 use Firmata::AnalogPin;
 use Firmata::DigitalPort;
 
@@ -14,46 +14,19 @@ if ($^O =~ /win/i){
     require Device::SerialPort;
 }
 
-our @ISA         = qw(Exporter);
-our %EXPORT_TAGS = (
-    'all' => [ qw(
-    )]);
+# Unique to Arduino.  Change for implimenting other hardware.
 
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-);
-
-our $VERSION = '1';
-
-# Constants
-# Message Command Bytes
-use constant DIGITAL_MESSAGE        => 0x90; # send data for a digital pin
-use constant ANALOG_MESSAGE         => 0xE0;  # send data for a analog pin
-
-use constant REPORT_ANALOG_PIN      => 0xC0; # enable analog input by pin #
-use constant REPORT_DIGITAL_PORTS   => 0xD0; # enable digital input by port pair
-use constant START_SYSEX            => 0xF0; # start a MIDI SysEx message
-use constant SET_DIGITAL_PIN_MODE   => 0xF4; # set a digital pin to INPUT or OUTPUT
-use constant END_SYSEX              => 0xF7; # end a MIDI SysEx message
-use constant REPORT_VERSION         => 0xF9; # report firmware version
-use constant SYSTEM_RESET           => 0xFF; # reset from MIDI
-
-# Pin modes
-use constant UNAVAILABLE            => -1;
-use constant DIGITAL_INPUT          => 0;
-use constant DIGITAL_OUTPUT         => 1;
-use constant DIGITAL_PWM            => 2;
-
-use constant PWM_PINS => (9,10,11);
-
+use constant PWM_PINS => {
+    0 => {0=>0, 1=>0, 2=>0, 3=>1, 4=>0, 5=>1, 6=>1, 7=>0},
+    1 => {0=>0, 1=>1, 2=>1, 3=>1, 4=>0, 5=>0, 6=>0, 7=>0}, 
+}; 
 
 sub new {
     my $that = shift;
     my ($serial_port, $attr) = @_;
     my %args = (
         Serial_Port => $serial_port,
-        Quiet=> 1,
+        Quiet => 1,
         Firmata_Version => undef,
         ref $attr ? %$attr : (),
         Digital => [],
@@ -79,8 +52,8 @@ sub new {
     bless $self, $class;
     sleep 2;
     
-    $self->initialize();
-    $self->iterate();
+    $self->initialize(); # Build pin tree
+    $self->iterate();    # Get data
     return $self;
 }
 
@@ -91,17 +64,85 @@ sub initialize{
         push (@{$self->{'Analog'}}, new Firmata::AnalogPin($self->{'Device'}, $i));
     }
     foreach my $i (0..1){
-        push (@{$self->{'DigitalPorts'}}, new Firmata::DigitalPort($self->{'Device'}, $i));
+        push (@{$self->{'DigitalPorts'}}, new Firmata::DigitalPort($self->{'Device'}, $i, PWM_PINS));
     }
-    $self->{'DigitalPorts'}[0]{'Pins'}[0]->set_mode(UNAVAILABLE);
-    $self->{'DigitalPorts'}[0]{'Pins'}[1]->set_mode(UNAVAILABLE);
-    $self->{'DigitalPorts'}[1]{'Pins'}[6]->set_mode(UNAVAILABLE);
-    $self->{'DigitalPorts'}[1]{'Pins'}[7]->set_mode(UNAVAILABLE);
+    $self->{'DigitalPorts'}[0]{'Pins'}[0]->set_mode(PIN_MODES->{UNAVAILABLE});  # TX and RX
+    $self->{'DigitalPorts'}[0]{'Pins'}[1]->set_mode(PIN_MODES->{UNAVAILABLE});  # Are dangerous to use
     
+    $self->{'DigitalPorts'}[1]{'Pins'}[6]->set_mode(PIN_MODES->{UNAVAILABLE});  # Not available
+    $self->{'DigitalPorts'}[1]{'Pins'}[7]->set_mode(PIN_MODES->{UNAVAILABLE});  # on Arduino
+    
+    # Build convience array
     push ( @{$self->{'Digital'}}, @{$self->{'DigitalPorts'}[0]{'Pins'}});
     push ( @{$self->{'Digital'}}, @{$self->{'DigitalPorts'}[1]{'Pins'}}[0..5]);
 }
 
+sub pin_modes{
+    # Returns the list of pin modes
+    my $self = shift;
+    return keys %{PIN_MODES()};
+}
+
+sub get_digital_pin{
+    # returns a pin object
+    my $self = shift;
+    my ($pin) = @_;
+    return $self->{'Digital'}[$pin];
+}
+
+sub get_analog_pin{
+    # returns a pin object
+    my $self = shift;
+    my ($pin) = @_;
+    return $self->{'Analog'}[$pin];
+}
+
+sub set_digital_pin_mode {
+    my $self = shift;
+    my ($pin, $mode) = @_;
+    if ($mode eq 'UNAVAILABLE'){
+        my $active = 0;
+        # look for active pins in the port
+        foreach my $dpin (@{$self->{'DigitalPorts'}[$pin >> 3 ]{Pins}}){
+            $active++ if ($dpin->get_mode() != PIN_MODES->{UNAVAILABLE});
+        }
+        unless($active){ # Turn off port if no active pins
+            $self->{'DigitalPorts'}[ $pin >> 3 ]->set_active(0) || return 0;
+        }
+                
+    } else {
+        # Turn on port
+        $self->{'DigitalPorts'}[ $pin >> 3 ]->set_active(1) || return 0;
+    }
+    # Set pin mode
+    $self->{'Digital'}[$pin]->set_mode(PIN_MODES->{$mode})           || return 0;
+    return 1;
+}
+
+sub read_digital_pin{
+    my $self = shift;
+    my ($pin) = @_;
+    return $self->{'Digital'}[$pin]->read();
+}
+
+sub write_digital_pin{
+    my $self = shift;
+    my ($pin, $value) = @_;
+    return $self->{'Digital'}[$pin]->write($value);
+}
+
+sub activate_analog_pin {
+    my $self = shift;
+    my ($pin) = @_;
+    $self->{'Analog'}[$pin]->set_active(1);
+}
+
+sub read_analog_pin{
+    my $self = shift;
+    my ($pin) = @_;
+    return $self->{'Analog'}[$pin]->read();
+}  
+    
 sub info {
     my $self = shift;
     return "Firmata::Arduino: " . $self->{'Serial_Port'};
@@ -180,3 +221,5 @@ sub DESTROY{
     $self->{'Device'}->close();
     undef $self->{'Device'};
 }
+
+1;
