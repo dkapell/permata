@@ -40,7 +40,7 @@ sub set_active {
     my ($active) = @_;
 
     $self->{'Active'} = $active;
-
+    print "Setting Digital port " . $self->{'Port_Number'} . " to $active\n" if DEBUG();
     my $message = chr( REPORT_DIGITAL_PORTS + $self->{'Port_Number'} );
     $message .= chr($active);
 
