@@ -8,6 +8,12 @@ use Firmata::Constants;
 use Firmata::AnalogPin;
 use Firmata::DigitalPort;
 
+if ($^O =~ /win/i){
+    require Win32::SerialPort;
+} else {
+    require Device::SerialPort;
+}
+
 # Unique to Arduino.  Change for implimenting other hardware.
 
 use constant PWM_PINS => {
@@ -20,7 +26,7 @@ sub new {
     my ($serial_port, $attr) = @_;
     my %args = (
         Serial_Port => $serial_port,
-        Quiet=> 1,
+        Quiet => 1,
         Firmata_Version => undef,
         ref $attr ? %$attr : (),
         Digital => [],
@@ -94,7 +100,7 @@ sub get_analog_pin{
 sub set_digital_pin_mode {
     my $self = shift;
     my ($pin, $mode) = @_;
-    if ($mode == PIN_MODES->{UNAVAILABLE}){
+    if ($mode eq 'UNAVAILABLE'){
         my $active = 0;
         # look for active pins in the port
         foreach my $dpin (@{$self->{'DigitalPorts'}[$pin >> 3 ]{Pins}}){
@@ -109,7 +115,7 @@ sub set_digital_pin_mode {
         $self->{'DigitalPorts'}[ $pin >> 3 ]->set_active(1) || return 0;
     }
     # Set pin mode
-    $self->{'Digital'}[$pin]->set_mode($mode)           || return 0;
+    $self->{'Digital'}[$pin]->set_mode(PIN_MODES->{$mode})           || return 0;
     return 1;
 }
 

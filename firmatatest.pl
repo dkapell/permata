@@ -27,6 +27,7 @@ EOF
 }
 
 my $arduino = Firmata::Arduino->new($device) or die "Failed to create device on port $device";
+#print $arduino->get_firmata_version() . "\n";
 
 if ($mode == 1){
     $arduino->set_digital_pin_mode($pin, "DIGITAL_INPUT")or die "Could not activate digital pin $pin, exiting";

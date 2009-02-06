@@ -52,6 +52,7 @@ sub set_value{
 
 sub read{
     my $self = shift;
+    print "Reading Analog pin " . $self->{'PinNumber'} . "\n" if DEBUG; 
     return $self->{'Value'};
 }
 

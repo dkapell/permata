@@ -37,17 +37,21 @@ sub set_mode{
     # mode, takes a value of:   DIGITAL_INPUT
     #                           DIGITAL_OUTPUT
     #                           DIGITAL_PWM
+    
     if ($mode == PIN_MODES->{DIGITAL_PWM} and not $self->{'PWM'}){
         croak ("Digital pin " . $self->_get_board_pin_number() . " does not have PWM capabilities");
     }
     if ($self->{Mode} == PIN_MODES->{UNAVAILABLE}){
         croak ("Cannot set mode for pin " . $self->_get_board_pin_number());
     }
+    
+    print "Setting Digital pin ". $self->_get_board_pin_number() . " to mode $mode\n" if DEBUG ;
     $self->{'Mode'} = $mode;
+    
     my $command = chr(SET_DIGITAL_PIN_MODE);
     $command .= chr($self->_get_board_pin_number());
     $command .= chr($mode);
-    #print "would write \"$command\" to device\n";
+    
     my $bytes = $self->{'Device'}->write($command);
     carp ("Write failed")       unless ($bytes);
     carp ("Write incomplete")   unless ($bytes == length($command));
@@ -85,6 +89,7 @@ sub read {
     if ($self->{'Mode'} == PIN_MODES->{UNAVAILABLE}){
         croak ("Cannot read pin " . $self->_get_board_pin_number());
     }
+    print "Reading Digital pin " . $self->_get_board_pin_number() . "\n" if DEBUG; 
     return $self->{'Value'};
 }
 
@@ -100,6 +105,8 @@ sub write {
         croak ("Digital pin " . $self->_get_board_pin_number(). " is not an output");
 
     } elsif($value != $self->read()){
+        print "Setting pin " . $self->_get_board_pin_number() . " to value $value\n" if DEBUG;
+       
         $self->{'Value'} = $value;
         if ($self->{'Mode'} == PIN_MODES->{DIGITAL_OUTPUT}){
             $self->{'Port'}->write();
